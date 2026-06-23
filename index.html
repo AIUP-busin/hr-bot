@@ -1,17 +1,345 @@
 <!DOCTYPE html>
 <html lang="uz">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HR Boshqaruv</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a1a; color: #fff; }
-    </style>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Boshqaruv</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--tg-theme-bg-color, #f5f5f5); color: var(--tg-theme-text-color, #222); min-height: 100vh; padding-bottom: 20px; }
+  .header { background: var(--tg-theme-button-color, #2563eb); color: var(--tg-theme-button-text-color, #fff); padding: 16px; text-align: center; font-size: 18px; font-weight: 700; position: sticky; top: 0; z-index: 10; }
+  .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; gap: 16px; font-size: 16px; color: #888; }
+  .spinner { width: 40px; height: 40px; border: 4px solid #ddd; border-top-color: var(--tg-theme-button-color, #2563eb); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .tabs { display: flex; border-bottom: 2px solid #e5e7eb; background: var(--tg-theme-secondary-bg-color, #fff); position: sticky; top: 52px; z-index: 9; }
+  .tab { flex: 1; padding: 12px 8px; text-align: center; font-size: 14px; font-weight: 600; cursor: pointer; color: #888; border-bottom: 3px solid transparent; transition: all 0.2s; }
+  .tab.active { color: var(--tg-theme-button-color, #2563eb); border-bottom-color: var(--tg-theme-button-color, #2563eb); }
+  .panel { display: none; padding: 16px; }
+  .panel.active { display: block; }
+  .card { background: var(--tg-theme-secondary-bg-color, #fff); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .card-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 12px; }
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+  .stat-box { background: #f0f4ff; border-radius: 10px; padding: 12px 8px; text-align: center; }
+  .stat-num { font-size: 22px; font-weight: 800; color: #2563eb; }
+  .stat-label { font-size: 11px; color: #666; margin-top: 2px; }
+  .btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: 600; text-align: center; transition: opacity 0.15s; }
+  .btn:active { opacity: 0.75; }
+  .btn-primary { background: var(--tg-theme-button-color, #2563eb); color: var(--tg-theme-button-text-color, #fff); }
+  .btn-danger { background: #ef4444; color: #fff; }
+  .btn-success { background: #22c55e; color: #fff; }
+  .btn-outline { background: transparent; color: var(--tg-theme-button-color, #2563eb); border: 2px solid var(--tg-theme-button-color, #2563eb); }
+  .btn + .btn { margin-top: 8px; }
+  .list-item { padding: 12px 0; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 12px; }
+  .list-item:last-child { border-bottom: none; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #2563eb); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+  .item-info { flex: 1; min-width: 0; }
+  .item-name { font-weight: 600; font-size: 15px; }
+  .item-sub { font-size: 12px; color: #888; margin-top: 2px; }
+  .badge { padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .badge-green { background: #dcfce7; color: #16a34a; }
+  .badge-red { background: #fee2e2; color: #dc2626; }
+  .badge-yellow { background: #fef9c3; color: #ca8a04; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .form-group { margin-bottom: 12px; }
+  .form-label { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; display: block; }
+  .form-input, .form-select, .form-textarea { width: 100%; padding: 12px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: 15px; background: var(--tg-theme-bg-color, #f5f5f5); color: var(--tg-theme-text-color, #222); outline: none; transition: border-color 0.2s; }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--tg-theme-button-color, #2563eb); }
+  .form-textarea { min-height: 80px; resize: vertical; }
+  .alert { padding: 12px; border-radius: 10px; margin-bottom: 12px; font-size: 14px; font-weight: 500; }
+  .alert-success { background: #dcfce7; color: #15803d; }
+  .alert-error { background: #fee2e2; color: #b91c1c; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: flex; align-items: flex-end; }
+  .modal { background: var(--tg-theme-secondary-bg-color, #fff); width: 100%; border-radius: 20px 20px 0 0; padding: 20px; max-height: 85vh; overflow-y: auto; }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; text-align: center; }
+  .time-display { font-size: 36px; font-weight: 800; text-align: center; color: var(--tg-theme-button-color, #2563eb); padding: 16px 0; }
+  .date-display { font-size: 14px; text-align: center; color: #888; margin-bottom: 16px; }
+  .no-data { text-align: center; color: #aaa; padding: 24px; font-size: 14px; }
+  #app { display: none; }
+</style>
+</head>
+<body>
+<div class="loading" id="loadingScreen"><div class="spinner"></div><div>Yuklanmoqda...</div></div>
+<div id="app">
+  <!-- ADMIN PANEL -->
+  <div id="adminApp" style="display:none">
+    <div class="header">&#128084; Admin Panel</div>
+    <div class="tabs">
+      <div class="tab active" onclick="adminTab('dashboard')">&#128202; Dashboard</div>
+      <div class="tab" onclick="adminTab('employees')">&#128101; Xodimlar</div>
+      <div class="tab" onclick="adminTab('attendance')">&#128203; Davomat</div>
+      <div class="tab" onclick="adminTab('leaves')">&#128221; Ta'tillar</div>
+    </div>
+    <div id="admin-dashboard" class="panel active">
+      <div id="statsContainer"></div>
+      <div class="card"><div class="card-title">Bugungi davomat</div><div id="todayCheckins" class="no-data">Yuklanmoqda...</div></div>
+      <div class="card"><div class="card-title">Kutilayotgan ta'til so'rovlar</div><div id="pendingLeaves" class="no-data">Yuklanmoqda...</div></div>
+    </div>
+    <div id="admin-employees" class="panel">
+      <div style="margin-bottom:12px"><button class="btn btn-primary" onclick="showAddEmployee()">+ Yangi xodim</button></div>
+      <div class="card"><div id="employeeList" class="no-data">Yuklanmoqda...</div></div>
+    </div>
+    <div id="admin-attendance" class="panel">
+      <div class="card"><div class="card-title">Barcha kirishlar</div><div id="allCheckins" class="no-data">Yuklanmoqda...</div></div>
+    </div>
+    <div id="admin-leaves" class="panel">
+      <div class="card"><div class="card-title">Ta'til so'rovlari</div><div id="leaveList" class="no-data">Yuklanmoqda...</div></div>
+    </div>
+  </div>
+  <!-- EMPLOYEE PANEL -->
+  <div id="employeeApp" style="display:none">
+    <div class="header">&#128100; Xodim Paneli</div>
+    <div class="tabs">
+      <div class="tab active" onclick="empTab('checkin')">&#9200; Davomat</div>
+      <div class="tab" onclick="empTab('leaves')">&#128221; Ta'til</div>
+      <div class="tab" onclick="empTab('history')">&#128203; Tarix</div>
+    </div>
+    <div id="emp-checkin" class="panel active">
+      <div class="card" style="text-align:center">
+        <div id="empGreeting" style="font-size:16px;font-weight:600;margin-bottom:8px"></div>
+        <div class="time-display" id="liveClock">--:--:--</div>
+        <div class="date-display" id="liveDate"></div>
+        <div id="todayStatus" style="margin-bottom:16px"></div>
+        <button class="btn btn-success" id="btnCheckin" onclick="doCheckin()">&#10003; Kelish belgilash</button>
+        <button class="btn btn-danger" id="btnCheckout" onclick="doCheckout()" style="display:none;margin-top:8px">&#128682; Ketish belgilash</button>
+      </div>
+      <div id="checkinMsg"></div>
+    </div>
+    <div id="emp-leaves" class="panel">
+      <div class="card">
+        <div class="card-title">Ta'til so'rovi yuborish</div>
+        <div id="leaveFormMsg"></div>
+        <div class="form-group"><label class="form-label">Boshlanish sanasi</label><input type="date" class="form-input" id="leaveStart"></div>
+        <div class="form-group"><label class="form-label">Tugash sanasi</label><input type="date" class="form-input" id="leaveEnd"></div>
+        <div class="form-group"><label class="form-label">Sabab</label><textarea class="form-textarea" id="leaveReason" placeholder="Ta'til sababini yozing..."></textarea></div>
+        <button class="btn btn-primary" onclick="submitLeave()">Yuborish</button>
+      </div>
+      <div class="card"><div class="card-title">Mening so'rovlarim</div><div id="myLeaves" class="no-data">Yuklanmoqda...</div></div>
+    </div>
+    <div id="emp-history" class="panel">
+      <div class="card"><div class="card-title">Mening davomatim</div><div id="myCheckins" class="no-data">Yuklanmoqda...</div></div>
+    </div>
+  </div>
+  <!-- NOT REGISTERED -->
+  <div id="notRegistered" style="display:none">
+    <div class="header">HR Boshqaruv</div>
+    <div style="padding:32px 16px;text-align:center">
+      <div style="font-size:48px;margin-bottom:16px">&#128683;</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:8px">Ruxsat yo'q</div>
+      <div style="color:#888;font-size:14px">Siz tizimda ro'yxatdan o'tmagan yoki ruxsat berilmagan. Admin bilan bog'laning.</div>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="closeModal(event)">
+  <div class="modal" id="modalBox"><div class="modal-title" id="modalTitle"></div><div id="modalBody"></div></div>
+                                                                        </div>
+<script>
+const API = 'https://hr-bot-mj05.onrender.com';
+let tgUser = null, currentRole = null, currentEmployee = null, todayCheckin = null;
+
+window.Telegram.WebApp.ready();
+window.Telegram.WebApp.expand();
+tgUser = window.Telegram.WebApp.initDataUnsafe?.user || null;
+
+async function init() {
+  if (!tgUser) tgUser = { id: 0, first_name: 'Test', username: 'test' };
+  try {
+    const r = await fetch(API+'/api/admin/stats', { headers: {'x-telegram-id': String(tgUser.id)} });
+    if (r.ok) { currentRole='admin'; showAdmin(); return; }
+  } catch(e) {}
+  try {
+    const r = await fetch(API+'/api/employee/me', { headers: {'x-telegram-id': String(tgUser.id)} });
+    if (r.ok) { currentEmployee = await r.json(); currentRole='employee'; showEmployee(); return; }
+  } catch(e) {}
+  document.getElementById('loadingScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('notRegistered').style.display='block';
+}
+
+function showAdmin() {
+  document.getElementById('loadingScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('adminApp').style.display='block';
+  loadAdminDashboard();
+}
+
+async function loadAdminDashboard() {
+  try {
+    const r = await fetch(API+'/api/admin/stats', {headers:{'x-telegram-id':String(tgUser.id)}});
+    if (!r.ok) return;
+    const d = await r.json();
+    document.getElementById('statsContainer').innerHTML = '<div class="stat-row"><div class="stat-box"><div class="stat-num">'+(d.totalEmployees||0)+'</div><div class="stat-label">Xodimlar</div></div><div class="stat-box"><div class="stat-num">'+(d.todayCheckins||0)+'</div><div class="stat-label">Bugun keldi</div></div><div class="stat-box"><div class="stat-num">'+(d.pendingLeaves||0)+'</div><div class="stat-label">Kutilmoqda</div></div></div>';
+  } catch(e) {}
+  try {
+    const r = await fetch(API+'/api/admin/checkins/today', {headers:{'x-telegram-id':String(tgUser.id)}});
+    const list = await r.json();
+    document.getElementById('todayCheckins').innerHTML = list.length ? list.map(c=>'<div class="list-item"><div class="avatar">'+(c.name||'?')[0].toUpperCase()+'</div><div class="item-info"><div class="item-name">'+(c.name||c.username||'Noma\'lum')+'</div><div class="item-sub">Keldi: '+fmtTime(c.checkin_time)+(c.checkout_time?' · Ketdi: '+fmtTime(c.checkout_time):'')+'</div></div><span class="badge '+(c.checkout_time?'badge-blue':'badge-green')+'">'+(c.checkout_time?'Ketdi':'Ishda')+'</span></div>').join('') : '<div class="no-data">Bugun hech kim kelmagan</div>';
+  } catch(e) {}
+  try {
+    const r = await fetch(API+'/api/admin/leaves?status=pending', {headers:{'x-telegram-id':String(tgUser.id)}});
+    const list = await r.json();
+    document.getElementById('pendingLeaves').innerHTML = list.length ? list.map(l=>'<div class="list-item"><div class="avatar">'+(l.name||'?')[0].toUpperCase()+'</div><div class="item-info"><div class="item-name">'+(l.name||'Noma\'lum')+'</div><div class="item-sub">'+fmtDate(l.start_date)+' - '+fmtDate(l.end_date)+'</div></div><div style="display:flex;flex-direction:column;gap:4px"><button onclick="approveLeave(\''+l.id+'\',\'approved\')" style="padding:4px 10px;background:#22c55e;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px">OK</button><button onclick="approveLeave(\''+l.id+'\',\'rejected\')" style="padding:4px 10px;background:#ef4444;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px">Rad</button></div></div>').join('') : '<div class="no-data">Kutilayotgan so\'rov yo\'q</div>';
+  } catch(e) {}
+}
+
+async function loadAdminEmployees() {
+  try {
+    const r = await fetch(API+'/api/admin/employees', {headers:{'x-telegram-id':String(tgUser.id)}});
+    const list = await r.json();
+    document.getElementById('employeeList').innerHTML = list.length ? list.map(e=>'<div class="list-item"><div class="avatar">'+(e.name||'?')[0].toUpperCase()+'</div><div class="item-info"><div class="item-name">'+(e.name||'Noma\'lum')+'</div><div class="item-sub">@'+(e.username||'-')+' - '+(e.position||'Lavozim yo\'q')+'</div></div><button onclick="deleteEmployee(\''+e.id+'\')" style="padding:5px 10px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;cursor:pointer;font-size:12px">O\'chirish</button></div>').join('') : '<div class="no-data">Xodimlar yo\'q</div>';
+  } catch(e) {}
+}
+
+async function loadAdminAttendance() {
+  try {
+    const r = await fetch(API+'/api/admin/checkins', {headers:{'x-telegram-id':String(tgUser.id)}});
+    const list = await r.json();
+    document.getElementById('allCheckins').innerHTML = list.length ? list.map(c=>'<div class="list-item"><div class="item-info"><div class="item-name">'+(c.name||c.username||'Noma\'lum')+'</div><div class="item-sub">'+fmtDate(c.date||c.checkin_time)+' · Keldi: '+fmtTime(c.checkin_time)+(c.checkout_time?' · Ketdi: '+fmtTime(c.checkout_time):'')+'</div></div><span class="badge '+(c.checkout_time?'badge-blue':'badge-green')+'">'+(c.checkout_time?'Tugadi':'Ishda')+'</span></div>').join('') : '<div class="no-data">Ma\'lumot yo\'q</div>';
+  } catch(e) {}
+}
+
+async function loadAdminLeaves() {
+  try {
+    const r = await fetch(API+'/api/admin/leaves', {headers:{'x-telegram-id':String(tgUser.id)}});
+    const list = await r.json();
+    document.getElementById('leaveList').innerHTML = list.length ? list.map(l=>'<div class="list-item"><div class="avatar">'+(l.name||'?')[0].toUpperCase()+'</div><div class="item-info"><div class="item-name">'+(l.name||'Noma\'lum')+'</div><div class="item-sub">'+fmtDate(l.start_date)+' - '+fmtDate(l.end_date)+'<br>'+(l.reason||'')+'</div></div><div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end"><span class="badge '+(l.status==='approved'?'badge-green':l.status==='rejected'?'badge-red':'badge-yellow')+'">'+(l.status==='approved'?'Tasdiqlandi':l.status==='rejected'?'Rad etildi':'Kutilmoqda')+'</span>'+(l.status==='pending'?'<button onclick="approveLeave(\''+l.id+'\',\'approved\')" style="padding:3px 8px;background:#22c55e;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px">OK</button><button onclick="approveLeave(\''+l.id+'\',\'rejected\')" style="padding:3px 8px;background:#ef4444;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px">Rad</button>':'')+'</div></div>').join('') : '<div class="no-data">Ta\'til so\'rovlari yo\'q</div>';
+  } catch(e) {}
+}
+
+async function approveLeave(id, status) {
+  try {
+    await fetch(API+'/api/admin/leaves/'+id, {method:'PATCH',headers:{'Content-Type':'application/json','x-telegram-id':String(tgUser.id)},body:JSON.stringify({status})});
+    loadAdminDashboard(); loadAdminLeaves();
+  } catch(e) {}
+}
+
+async function deleteEmployee(id) {
+  if (!confirm('Xodimni o\'chirmoqchimisiz?')) return;
+  try {
+    await fetch(API+'/api/admin/employees/'+id, {method:'DELETE',headers:{'x-telegram-id':String(tgUser.id)}});
+    loadAdminEmployees();
+  } catch(e) {}
+}
+
+function showAddEmployee() {
+  document.getElementById('modalTitle').textContent = 'Yangi xodim qo\'shish';
+  document.getElementById('modalBody').innerHTML = '<div id="addEmpMsg"></div><div class="form-group"><label class="form-label">Ism *</label><input class="form-input" id="newName" placeholder="Ism Familiya"></div><div class="form-group"><label class="form-label">Telegram username</label><input class="form-input" id="newUsername" placeholder="username"></div><div class="form-group"><label class="form-label">Telegram ID *</label><input class="form-input" id="newTgId" placeholder="123456789" type="number"></div><div class="form-group"><label class="form-label">Lavozim</label><input class="form-input" id="newPosition" placeholder="Dasturchi..."></div><div class="form-group"><label class="form-label">Oylik maosh</label><input class="form-input" id="newSalary" placeholder="5000000" type="number"></div><button class="btn btn-primary" onclick="addEmployee()">Qo\'shish</button><button class="btn btn-outline" onclick="closeModal()" style="margin-top:8px">Bekor qilish</button>';
+  document.getElementById('modalOverlay').style.display='flex';
+}
+
+async function addEmployee() {
+  const name=document.getElementById('newName').value.trim(), tgId=document.getElementById('newTgId').value.trim();
+  const username=document.getElementById('newUsername').value.trim(), position=document.getElementById('newPosition').value.trim(), salary=document.getElementById('newSalary').value.trim();
+  const msg=document.getElementById('addEmpMsg');
+  if (!name||!tgId) { msg.innerHTML='<div class="alert alert-error">Ism va Telegram ID majburiy!</div>'; return; }
+  try {
+    const r=await fetch(API+'/api/admin/employees',{method:'POST',headers:{'Content-Type':'application/json','x-telegram-id':String(tgUser.id)},body:JSON.stringify({name,telegram_id:tgId,username,position,salary})});
+    if (r.ok) { closeModal(); loadAdminEmployees(); adminTab('employees'); }
+    else { const e=await r.json(); msg.innerHTML='<div class="alert alert-error">'+(e.error||'Xato')+'</div>'; }
+  } catch(e) { msg.innerHTML='<div class="alert alert-error">Server bilan bog\'lanib bo\'lmadi</div>'; }
+}
+
+function adminTab(tab) {
+  document.querySelectorAll('#adminApp .tab').forEach((t,i)=>t.classList.toggle('active',['dashboard','employees','attendance','leaves'][i]===tab));
+  document.querySelectorAll('#adminApp .panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('admin-'+tab).classList.add('active');
+  if(tab==='dashboard') loadAdminDashboard();
+  else if(tab==='employees') loadAdminEmployees();
+  else if(tab==='attendance') loadAdminAttendance();
+  else if(tab==='leaves') loadAdminLeaves();
+}
+
+function showEmployee() {
+  document.getElementById('loadingScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('employeeApp').style.display='block';
+  document.getElementById('empGreeting').textContent='Salom, '+(currentEmployee.name||tgUser.first_name||'Xodim')+'!';
+  startClock(); loadTodayStatus(); loadMyLeaves(); loadMyCheckins();
+}
+
+function startClock() {
+  function tick() {
+    const now=new Date();
+    document.getElementById('liveClock').textContent=now.toLocaleTimeString('uz-UZ');
+    document.getElementById('liveDate').textContent=now.toLocaleDateString('uz-UZ',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  }
+  tick(); setInterval(tick,1000);
+}
+
+async function loadTodayStatus() {
+  try { const r=await fetch(API+'/api/employee/checkin/today',{headers:{'x-telegram-id':String(tgUser.id)}}); todayCheckin=r.ok?await r.json():null; } catch(e) { todayCheckin=null; }
+  updateCheckinUI();
+}
+
+function updateCheckinUI() {
+  const status=document.getElementById('todayStatus'), btnIn=document.getElementById('btnCheckin'), btnOut=document.getElementById('btnCheckout');
+  if (!todayCheckin) { status.innerHTML='<span class="badge badge-red">Hali kelmadingiz</span>'; btnIn.style.display='block'; btnOut.style.display='none'; }
+  else if (!todayCheckin.checkout_time) { status.innerHTML='<span class="badge badge-green">Keldingiz: '+fmtTime(todayCheckin.checkin_time)+'</span>'; btnIn.style.display='none'; btnOut.style.display='block'; }
+  else { status.innerHTML='<span class="badge badge-blue">Keldi: '+fmtTime(todayCheckin.checkin_time)+' | Ketdi: '+fmtTime(todayCheckin.checkout_time)+'</span>'; btnIn.style.display='none'; btnOut.style.display='none'; }
+}
+
+async function doCheckin() {
+  const msg=document.getElementById('checkinMsg');
+  try {
+    const r=await fetch(API+'/api/employee/checkin',{method:'POST',headers:{'Content-Type':'application/json','x-telegram-id':String(tgUser.id)},body:JSON.stringify({type:'in'})});
+    const d=await r.json();
+    if(r.ok){todayCheckin=d;updateCheckinUI();msg.innerHTML='<div class="alert alert-success">Kelish belgilandi!</div>';setTimeout(()=>msg.innerHTML='',3000);loadMyCheckins();}
+    else msg.innerHTML='<div class="alert alert-error">'+(d.error||'Xato')+'</div>';
+  } catch(e) {msg.innerHTML='<div class="alert alert-error">Server bilan bog\'lanib bo\'lmadi</div>';}
+}
+
+async function doCheckout() {
+  const msg=document.getElementById('checkinMsg');
+  try {
+    const r=await fetch(API+'/api/employee/checkout',{method:'POST',headers:{'Content-Type':'application/json','x-telegram-id':String(tgUser.id)}});
+    const d=await r.json();
+    if(r.ok){todayCheckin=d;updateCheckinUI();msg.innerHTML='<div class="alert alert-success">Ketish belgilandi!</div>';setTimeout(()=>msg.innerHTML='',3000);loadMyCheckins();}
+    else msg.innerHTML='<div class="alert alert-error">'+(d.error||'Xato')+'</div>';
+  } catch(e) {msg.innerHTML='<div class="alert alert-error">Server bilan bog\'lanib bo\'lmadi</div>';}
+}
+
+async function submitLeave() {
+  const start=document.getElementById('leaveStart').value, end=document.getElementById('leaveEnd').value, reason=document.getElementById('leaveReason').value.trim();
+  const msg=document.getElementById('leaveFormMsg');
+  if(!start||!end||!reason){msg.innerHTML='<div class="alert alert-error">Barcha maydonlarni to\'ldiring!</div>';return;}
+  try {
+    const r=await fetch(API+'/api/employee/leave',{method:'POST',headers:{'Content-Type':'application/json','x-telegram-id':String(tgUser.id)},body:JSON.stringify({start_date:start,end_date:end,reason})});
+    const d=await r.json();
+    if(r.ok){msg.innerHTML='<div class="alert alert-success">So\'rov yuborildi!</div>';document.getElementById('leaveStart').value='';document.getElementById('leaveEnd').value='';document.getElementById('leaveReason').value='';loadMyLeaves();}
+    else msg.innerHTML='<div class="alert alert-error">'+(d.error||'Xato')+'</div>';
+  } catch(e) {msg.innerHTML='<div class="alert alert-error">Server bilan bog\'lanib bo\'lmadi</div>';}
+}
+
+async function loadMyLeaves() {
+  try {
+    const r=await fetch(API+'/api/employee/leaves',{headers:{'x-telegram-id':String(tgUser.id)}});
+    const list=await r.json();
+    document.getElementById('myLeaves').innerHTML=list.length?list.map(l=>'<div class="list-item"><div class="item-info"><div class="item-name">'+fmtDate(l.start_date)+' - '+fmtDate(l.end_date)+'</div><div class="item-sub">'+(l.reason||'')+'</div></div><span class="badge '+(l.status==='approved'?'badge-green':l.status==='rejected'?'badge-red':'badge-yellow')+'">'+(l.status==='approved'?'OK':l.status==='rejected'?'Rad':'Kutilmoqda')+'</span></div>').join(''):'<div class="no-data">Ta\'til so\'rovlari yo\'q</div>';
+  } catch(e) {}
+}
+
+async function loadMyCheckins() {
+  try {
+    const r=await fetch(API+'/api/employee/checkins',{headers:{'x-telegram-id':String(tgUser.id)}});
+    const list=await r.json();
+    document.getElementById('myCheckins').innerHTML=list.length?list.map(c=>'<div class="list-item"><div class="item-info"><div class="item-name">'+fmtDate(c.checkin_time||c.date)+'</div><div class="item-sub">Keldi: '+fmtTime(c.checkin_time)+(c.checkout_time?' · Ketdi: '+fmtTime(c.checkout_time):'')+'</div></div><span class="badge '+(c.checkout_time?'badge-blue':'badge-green')+'">'+(c.checkout_time?'Tugadi':'Ishda')+'</span></div>').join(''):'<div class="no-data">Davomat ma\'lumoti yo\'q</div>';
+  } catch(e) {}
+}
+
+function empTab(tab) {
+  document.querySelectorAll('#employeeApp .tab').forEach((t,i)=>t.classList.toggle('active',['checkin','leaves','history'][i]===tab));
+  document.querySelectorAll('#employeeApp .panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('emp-'+tab).classList.add('active');
+}
+
+function closeModal(e) {
+  if(!e||e.target===document.getElementById('modalOverlay')) document.getElementById('modalOverlay').style.display='none';
+}
+
+function fmtTime(iso) { if(!iso) return '--:--'; try{return new Date(iso).toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'});}catch(e){return iso;} }
+function fmtDate(iso) { if(!iso) return '-'; try{return new Date(iso).toLocaleDateString('uz-UZ',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return iso;} }
+
+init();
+</script>
+</body>
 </html>
